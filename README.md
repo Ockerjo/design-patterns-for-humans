@@ -216,31 +216,79 @@ ValueListenableBuilder<int>(
 When you want to update the UI in response to changes in a specific value or state.
 
 ### 🏃‍♂️ Command
-The **Command** pattern in Flutter can be seen in state management solutions like `Bloc`.
+In the latest versions of Flutter Bloc, the pattern is used to handle UI events through the Bloc by dispatching events and emitting states. Here's how it looks using Bloc and Cubit.
 
-**Example:**
-A button that sends an event to change the state:
+Example: A button that sends an event to change the state:
 
 ```dart
-ElevatedButton(
-  onPressed: () {
-    context.read<CounterBloc>().add(IncrementEvent());
-  },
-  child: Text('Increment'),
-);
+// Define the event and state classes
+class CounterEvent {}
+
+class IncrementEvent extends CounterEvent {}
+
+class CounterState {
+  final int counter;
+  CounterState(this.counter);
+}
+
+// Define the bloc that handles the events and emits new states
+class CounterBloc extends Bloc<CounterEvent, CounterState> {
+  CounterBloc() : super(CounterState(0)) {
+    on<IncrementEvent>((event, emit) {
+      emit(CounterState(state.counter + 1));
+    });
+  }
+}
+```
+
+Now, you can wire up the Bloc in the UI with BlocBuilder:
+
+```dart
+class CounterPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => CounterBloc(),
+      child: Scaffold(
+        appBar: AppBar(title: Text('Counter Example')),
+        body: Center(
+          child: BlocBuilder<CounterBloc, CounterState>(
+            builder: (context, state) {
+              return Text('Counter: ${state.counter}');
+            },
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            context.read<CounterBloc>().add(IncrementEvent());
+          },
+          child: Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+}
+
 ```
 
 **When to use?**  
-When separating the action logic (command) from the UI elements that trigger them.
+When separating the action logic (command) from the UI elements that trigger them. Bloc helps keep business logic cleanly separated from UI code.
 
 ### 💢 State
 The **State** pattern is vital in Flutter for managing widget state.
 
-**Example:**
+Here’s a comparison between using StatefulWidget and Bloc to manage state in Flutter.
+
+**StatefulWidget Example:**
 Flutter's stateful widgets inherently use the state pattern to manage UI changes based on state.
 
 ```dart
-class CounterState extends State<Counter> {
+class CounterStatefulWidget extends StatefulWidget {
+  @override
+  _CounterStatefulWidgetState createState() => _CounterStatefulWidgetState();
+}
+
+class _CounterStatefulWidgetState extends State<CounterStatefulWidget> {
   int _counter = 0;
 
   void _incrementCounter() {
@@ -251,13 +299,119 @@ class CounterState extends State<Counter> {
 
   @override
   Widget build(BuildContext context) {
-    return Text('$_counter');
+    return Scaffold(
+      appBar: AppBar(title: Text('StatefulWidget Counter')),
+      body: Center(
+        child: Text('Counter: $_counter'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+```
+
+**Bloc Example:**
+In contrast to StatefulWidget, using Bloc provides a more scalable solution, especially for apps with complex state management needs.
+
+```dart
+// Define the state and event classes (similar to previous example)
+class CounterState {
+  final int counter;
+  CounterState(this.counter);
+}
+
+class IncrementEvent extends CounterEvent {}
+
+// The CounterBloc as defined earlier
+class CounterBloc extends Bloc<CounterEvent, CounterState> {
+  CounterBloc() : super(CounterState(0)) {
+    on<IncrementEvent>((event, emit) {
+      emit(CounterState(state.counter + 1));
+    });
+  }
+}
+
+// UI using Bloc
+class CounterBlocWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => CounterBloc(),
+      child: Scaffold(
+        appBar: AppBar(title: Text('Bloc Counter')),
+        body: Center(
+          child: BlocBuilder<CounterBloc, CounterState>(
+            builder: (context, state) {
+              return Text('Counter: ${state.counter}');
+            },
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            context.read<CounterBloc>().add(IncrementEvent());
+          },
+          child: Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+}
+
+```
+
+**When to use?**  
+StatefulWidget: When state is simple and only affects a small, isolated part of the app.
+
+Bloc: For more complex state management or when you need to decouple business logic from UI.
+
+
+### 💡 Strategy
+The **Strategy** pattern lets you select different algorithms at runtime based on the conditions.
+
+**Example:**
+In Flutter, we can use the Strategy pattern to change the sorting logic for a list dynamically based on the user's choice.
+
+```dart
+abstract class SortStrategy {
+  List<int> sort(List<int> data);
+}
+
+class BubbleSort implements SortStrategy {
+  @override
+  List<int> sort(List<int> data) {
+    // Bubble sort logic here
+    return data;
+  }
+}
+
+class QuickSort implements SortStrategy {
+  @override
+  List<int> sort(List<int> data) {
+    // Quick sort logic here
+    return data;
+  }
+}
+
+class Sorter {
+  SortStrategy strategy;
+
+  Sorter(this.strategy);
+
+  void changeStrategy(SortStrategy strategy) {
+    this.strategy = strategy;
+  }
+
+  List<int> sort(List<int> data) {
+    return strategy.sort(data);
   }
 }
 ```
 
 **When to use?**  
-When you need to manage and react to changing states in your app.
+When you need to switch between multiple algorithms dynamically in Flutter, such as different data sorting or filtering strategies.
 
 ---
 
